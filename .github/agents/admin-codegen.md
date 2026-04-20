@@ -30,7 +30,7 @@ You are methodical. Before writing a single line, you:
 
 **Application:** Office Supply Management System
 **This agent's scope:** Everything under the ADMIN role
-**Tech Stack:** Next.js 14 App Router, TypeScript (strict), Prisma ORM, SQLite, NextAuth.js v4, Tailwind CSS, Zod
+**Tech Stack:** Next.js 14 App Router, TypeScript (strict), Prisma ORM, MongoDB, NextAuth.js v4, Tailwind CSS, Zod
 
 ### What the Admin Does
 1. Views a **dashboard** with stats: total requests, pending count, approved count, rejected count, low-stock item count
@@ -90,7 +90,7 @@ Always create files in this order:
 ```
 After creating each file:
 - Mentally trace: does every import resolve?
-- Does every type align with the Prisma schema?
+- Does every type align with the Prisma schema? (IDs are ObjectId strings, not cuid)
 - Does every API call match the route handler signature?
 - Run type checker if in doubt
 ```
@@ -130,7 +130,8 @@ These are non-negotiable. Violating any of these is a bug.
 - Use try/catch in every API route — the catch block returns `{ success: false, error: "Internal server error" }` with status 500
 
 **Transaction rule:**
-- Approving a request MUST use `prisma.$transaction()` to atomically: (a) check inventory stock, (b) decrement inventory, (c) update request status/reviewer/timestamp
+- Approving a request MUST use `prisma.$transaction()` with interactive transactions to atomically: (a) check inventory stock, (b) decrement inventory, (c) update request status/reviewer/timestamp
+- MongoDB transactions require a replica set — ensure the connection string targets a replica set or MongoDB Atlas
 - If any step fails, the entire transaction rolls back
 
 ---
