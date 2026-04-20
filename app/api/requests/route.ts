@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeRequestStatus } from "@/lib/admin/request-utils";
 import connectToDatabase from "@/lib/mongodb";
 import Request from "@/lib/models/Request";
+import { buildRequestQueryFilter, parseCreateRequestBody } from "@/lib/user/request-utils";
 
-// GET /api/requests — list all requests, optionally filter by ?status=
+// GET /api/requests — list requests, optionally filtered by employee or status
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const { searchParams } = new URL(req.url);
-    const status = normalizeRequestStatus(searchParams.get("status"));
-
-    const filter: Record<string, string> = {};
-    if (status) {
-      filter.status = status;
-    }
+    const filter = buildRequestQueryFilter(req.url);
 
     const requests = await Request.find(filter).sort({ createdAt: -1 });
     return NextResponse.json(
@@ -39,43 +33,58 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const body = await req.json();
-    const { itemName, quantity, remarks } = body;
-
-    // Validation
-    if (!itemName || typeof itemName !== "string" || itemName.trim() === "") {
-      return NextResponse.json(
-        { success: false, error: "itemName is required" },
-        { status: 400 }
-      );
-    }
-
-    if (quantity == null || typeof quantity !== "number" || quantity <= 0) {
-      return NextResponse.json(
-        { success: false, error: "quantity must be a number greater than 0" },
-        { status: 400 }
-      );
-    }
+    const body = await parseCreateRequestBody(req);
 
     const newRequest = await Request.create({
-      employeeName: typeof body.employeeName === "string" ? body.employeeName.trim() : "",
-      itemName: itemName.trim(),
-      quantity,
-      remarks: remarks ?? "",
+      employeeName: body.employeeName,
+      employeeId: body.employeeId,
+      itemName: body.itemName,
+      quantity: body.quantity,
+      remarks: body.remarks,
+      status: "Pending",
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: "Request created successfully",
+        message: "Request submitted successfully",
         data: newRequest,
       },
       { status: 201 }
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal server error";
+
+    if (message === "INVALID_JSON_BODY") {
+      return NextResponse.json(
+        { success: false, message: "Invalid JSON request body", error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
+    if (message === "INVALID_REQUEST_BODY") {
+      return NextResponse.json(
+        { success: false, message: "Request body must be a valid JSON object", error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
+    if (message === "ITEM_NAME_REQUIRED") {
+      return NextResponse.json(
+        { success: false, message: "Item name is required", error: "Item name is required" },
+        { status: 400 }
+      );
+    }
+
+    if (message === "INVALID_QUANTITY") {
+      return NextResponse.json(
+        { success: false, message: "Quantity must be greater than 0", error: "Invalid quantity" },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { success: false, message: "Failed to create request", error: message },
+      { success: false, message: "Failed to submit request", error: message },
       { status: 500 }
     );
   }

@@ -36,6 +36,9 @@ export async function POST() {
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Failed to seed inventory", error: message },
+      { status: 500 }
+    );
   }
 }

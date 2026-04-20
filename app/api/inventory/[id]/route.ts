@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectToDatabase from "@/lib/mongodb";
 import InventoryItem from "@/lib/models/InventoryItem";
 
@@ -11,12 +12,32 @@ export async function PATCH(
     await connectToDatabase();
 
     const { id } = await params;
-    const body = await req.json();
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid inventory id", error: "Invalid inventory id" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { success: false, message: "Invalid JSON request body", error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
     const { quantity } = body;
 
     if (quantity == null || typeof quantity !== "number" || quantity < 0) {
       return NextResponse.json(
-        { success: false, error: "quantity must be a number >= 0" },
+        {
+          success: false,
+          message: "Quantity must be a number greater than or equal to 0",
+          error: "Invalid quantity",
+        },
         { status: 400 }
       );
     }
@@ -29,14 +50,24 @@ export async function PATCH(
 
     if (!item) {
       return NextResponse.json(
-        { success: false, error: "Item not found" },
+        { success: false, message: "Inventory item not found", error: "Inventory item not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: item }, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Inventory item updated successfully",
+        data: item,
+      },
+      { status: 200 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Failed to update inventory item", error: message },
+      { status: 500 }
+    );
   }
 }

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IRequest extends Document {
   employeeName?: string;
+  employeeId?: string;
   itemName: string;
   quantity: number;
   remarks?: string;
@@ -14,6 +15,7 @@ export interface IRequest extends Document {
 const RequestSchema = new Schema<IRequest>(
   {
     employeeName: { type: String, trim: true, default: "" },
+    employeeId: { type: String, trim: true, default: "" },
     itemName: { type: String, required: true, trim: true },
     quantity: { type: Number, required: true, min: 1 },
     remarks: { type: String, default: "" },

@@ -6,6 +6,8 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
 
+const mongoUri: string = MONGODB_URI;
+
 type MongooseCache = {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -27,7 +29,7 @@ export default async function connectToDatabase(): Promise<typeof mongoose> {
   }
 
   if (!globalCache.promise) {
-    globalCache.promise = mongoose.connect(MONGODB_URI, {
+    globalCache.promise = mongoose.connect(mongoUri, {
       bufferCommands: false,
     });
   }
