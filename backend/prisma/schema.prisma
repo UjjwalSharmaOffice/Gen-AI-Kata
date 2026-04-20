@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  passwordHash      String
+  role              Role
+  createdAt         DateTime           @default(now())
+  requests          SupplyRequest[]    @relation("Requester")
+  decisions         SupplyRequest[]    @relation("Reviewer")
+  stockTransactions StockTransaction[] @relation("CreatedBy")
+}
+
+model InventoryItem {
+  id                String             @id @default(cuid())
+  name              String             @unique
+  quantity          Int
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  requestRows       SupplyRequestItem[]
+  stockTransactions StockTransaction[]
+}
+
+model SupplyRequest {
+  id              String             @id @default(cuid())
+  employeeId      String
+  status          RequestStatus      @default(PENDING)
+  remarks         String?
+  rejectionReason String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  employee        User               @relation("Requester", fields: [employeeId], references: [id])
+  reviewedBy      User?              @relation("Reviewer", fields: [reviewedById], references: [id])
+  items           SupplyRequestItem[]
+}
+
+model SupplyRequestItem {
+  id        String        @id @default(cuid())
+  requestId String
+  itemId    String
+  quantity  Int
+  request   SupplyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id])
+}
+
+model StockTransaction {
+  id          String        @id @default(cuid())
+  itemId       String
+  delta        Int
+  reason       String
+  referenceId  String?
+  createdById  String
+  createdAt    DateTime      @default(now())
+  item         InventoryItem @relation(fields: [itemId], references: [id])
+  createdBy    User          @relation("CreatedBy", fields: [createdById], references: [id])
+}
