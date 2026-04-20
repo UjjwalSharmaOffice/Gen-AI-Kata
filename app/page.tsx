@@ -1,3 +1,4 @@
+import { LoginForm } from "@/components/LoginForm";
 import { RoleSelector } from "@/components/RoleSelector";
 
 export default function HomePage() {
@@ -12,7 +13,10 @@ export default function HomePage() {
         </p>
       </section>
 
-      <RoleSelector />
+      <div className="grid gap-8 xl:grid-cols-[1fr_1.2fr]">
+        <LoginForm />
+        <RoleSelector />
+      </div>
     </div>
   );
 }

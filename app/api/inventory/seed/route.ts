@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import InventoryItem from "@/lib/models/InventoryItem";
 
@@ -12,8 +14,14 @@ const SEED_DATA = [
 ];
 
 // POST /api/inventory/seed — seed inventory with sample data
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const { response } = requireAuth(request, ["admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const results = [];

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import Request from "@/lib/models/Request";
 import { isValidRequestId } from "@/lib/user/request-utils";
@@ -8,6 +9,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = requireAuth(_request, ["employee", "admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const { id } = await params;
@@ -22,6 +29,13 @@ export async function GET(
     const request = await Request.findById(id);
 
     if (!request) {
+      return NextResponse.json(
+        { success: false, message: "Request not found", error: "Request not found" },
+        { status: 404 }
+      );
+    }
+
+    if (session.role === "employee" && request.employeeName !== session.displayName) {
       return NextResponse.json(
         { success: false, message: "Request not found", error: "Request not found" },
         { status: 404 }

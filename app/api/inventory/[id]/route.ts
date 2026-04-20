@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
+import { requireAuth } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import InventoryItem from "@/lib/models/InventoryItem";
 
@@ -9,6 +10,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { response } = requireAuth(req, ["admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const { id } = await params;

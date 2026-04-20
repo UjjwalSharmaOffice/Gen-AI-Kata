@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { LogoutButton } from "@/components/LogoutButton";
+import { ApiResponse, AuthSession } from "@/lib/types";
 
 const links = [
   { href: "/", label: "Home" },
@@ -14,6 +17,34 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const [session, setSession] = useState<AuthSession | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSession() {
+      try {
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        const result = (await response.json()) as ApiResponse<AuthSession | null>;
+
+        if (!active) {
+          return;
+        }
+
+        setSession(result.data ?? null);
+      } catch {
+        if (active) {
+          setSession(null);
+        }
+      }
+    }
+
+    loadSession();
+
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   return (
     <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -24,7 +55,13 @@ export function Navbar() {
           </Link>
           <p className="text-sm text-slate-500">Simple employee requests and admin approvals for demo day.</p>
         </div>
-        <nav className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-3 lg:items-end">
+          {session ? (
+            <div className="text-right text-xs text-slate-500">
+              Signed in as <span className="font-semibold text-slate-700">{session.displayName}</span> ({session.role})
+            </div>
+          ) : null}
+        <nav className="flex flex-wrap gap-2 lg:justify-end">
           {links.map((link) => {
             const active = pathname === link.href;
             return (
@@ -41,7 +78,9 @@ export function Navbar() {
               </Link>
             );
           })}
+          {session ? <LogoutButton /> : null}
         </nav>
+        </div>
       </div>
     </header>
   );

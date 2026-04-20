@@ -15,7 +15,6 @@ export function RequestForm({
   description = "Fill in the item details below. New requests start in Pending status.",
   onSubmitted,
 }: RequestFormProps) {
-  const [employeeName, setEmployeeName] = useState("");
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [remarks, setRemarks] = useState("");
@@ -25,7 +24,9 @@ export function RequestForm({
 
   useEffect(() => {
     const savedName = window.localStorage.getItem("office-employee-name") ?? "";
-    setEmployeeName(savedName);
+    if (savedName) {
+      window.localStorage.setItem("office-employee-name", savedName);
+    }
   }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -34,8 +35,6 @@ export function RequestForm({
     setSuccess("");
 
     const trimmedItemName = itemName.trim();
-    const trimmedEmployeeName = employeeName.trim();
-
     if (!trimmedItemName) {
       setError("Item name is required.");
       return;
@@ -53,7 +52,6 @@ export function RequestForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          employeeName: trimmedEmployeeName,
           itemName: trimmedItemName,
           quantity,
           remarks: remarks.trim(),
@@ -67,12 +65,12 @@ export function RequestForm({
         return;
       }
 
-      window.localStorage.setItem("office-employee-name", trimmedEmployeeName);
+      window.localStorage.setItem("office-employee-name", result.data.employeeName || "");
       setSuccess(result.message || "Request submitted successfully.");
       setItemName("");
       setQuantity(1);
       setRemarks("");
-      onSubmitted?.(result.data, { employeeName: trimmedEmployeeName });
+      onSubmitted?.(result.data, { employeeName: result.data.employeeName || "" });
     } catch {
       setError("Could not submit the request right now.");
     } finally {
@@ -88,16 +86,6 @@ export function RequestForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-slate-700">Your name (optional)</label>
-          <input
-            value={employeeName}
-            onChange={(event) => setEmployeeName(event.target.value)}
-            placeholder="Aseem"
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm shadow-sm focus:border-slate-500"
-          />
-        </div>
-
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700">Item name</label>
           <input

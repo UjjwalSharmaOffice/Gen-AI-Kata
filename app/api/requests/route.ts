@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import Request from "@/lib/models/Request";
 import { buildRequestQueryFilter, parseCreateRequestBody } from "@/lib/user/request-utils";
@@ -6,9 +7,19 @@ import { buildRequestQueryFilter, parseCreateRequestBody } from "@/lib/user/requ
 // GET /api/requests — list requests, optionally filtered by employee or status
 export async function GET(req: NextRequest) {
   try {
+    const { session, response } = requireAuth(req, ["employee", "admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const filter = buildRequestQueryFilter(req.url);
+
+    if (session.role === "employee") {
+      filter.employeeName = session.displayName;
+    }
 
     const requests = await Request.find(filter).sort({ createdAt: -1 });
     return NextResponse.json(
@@ -31,13 +42,19 @@ export async function GET(req: NextRequest) {
 // POST /api/requests — create a new supply request
 export async function POST(req: NextRequest) {
   try {
+    const { session, response } = requireAuth(req, ["employee"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const body = await parseCreateRequestBody(req);
 
     const newRequest = await Request.create({
-      employeeName: body.employeeName,
-      employeeId: body.employeeId,
+      employeeName: session.displayName,
+      employeeId: session.username,
       itemName: body.itemName,
       quantity: body.quantity,
       remarks: body.remarks,

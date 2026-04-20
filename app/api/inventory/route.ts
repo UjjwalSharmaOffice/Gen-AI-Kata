@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 import InventoryItem from "@/lib/models/InventoryItem";
 
 // GET /api/inventory — list all inventory items
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { response } = requireAuth(request, ["admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
     const items = await InventoryItem.find({}).sort({ name: 1 });
     return NextResponse.json(
@@ -27,6 +34,12 @@ export async function GET() {
 // POST /api/inventory — add a new inventory item (admin / seed)
 export async function POST(req: NextRequest) {
   try {
+    const { response } = requireAuth(req, ["admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const body = await req.json().catch(() => null);

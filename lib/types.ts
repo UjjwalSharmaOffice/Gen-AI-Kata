@@ -1,5 +1,13 @@
 export type RequestStatus = "Pending" | "Approved" | "Rejected";
 
+export type AuthRole = "employee" | "admin";
+
+export type AuthSession = {
+  username: string;
+  displayName: string;
+  role: AuthRole;
+};
+
 export type SupplyRequest = {
   _id: string;
   employeeName?: string;

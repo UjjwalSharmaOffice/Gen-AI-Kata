@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isValidRequestId, rejectRequestById } from "@/lib/admin/request-utils";
+import { requireAuth } from "@/lib/auth";
 import connectToDatabase from "@/lib/mongodb";
 
 export async function PATCH(
@@ -7,6 +8,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { response } = requireAuth(request, ["admin"]);
+
+    if (response) {
+      return response;
+    }
+
     await connectToDatabase();
 
     const { id } = await params;
